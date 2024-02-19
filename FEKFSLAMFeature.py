@@ -35,8 +35,11 @@ class FEKFSLAMFeature(MapFeature):
         :return: expected observation of the feature :math:`^Nx_{F_j}`
         """
         
-        ## To be completed by the student
-        #return ...
+        NxB = self.GetRobotPose(xk_bar)
+        Nx_Fj = np.setdiff1d(xk_bar, NxB)
+
+        #print(type(NxB), type(Nx_Fj))
+        return self.s2o((NxB.ominus()).boxplus(Nx_Fj))
 
     def Jhfjx(self, xk, Fj):  # Observation function for zf_i and x_Fj
         """
@@ -68,7 +71,11 @@ class FEKFSLAMFeature(MapFeature):
         :return: Jacobian matrix defined in eq. :eq:`eq-Jhfjx`        """
 
         ## To be completed by the student
-        #return ...
+        NxB = self.GetRobotPose(xk)
+        Nx_F = np.setdiff1d(xk, NxB)
+        Nx_Fj = Nx_F[int(Fj)]
+        Jp = (self.J_s2o(NxB.ominus().boxplus(Nx_Fj))) @ (NxB.ominus().J_1boxplus(Nx_Fj)) @ NxB.J_ominus()
+        return Jp
 
 class FEKFSLAM2DCartesianFeature(FEKFSLAMFeature, Cartesian2DMapFeature):
     """
