@@ -24,8 +24,7 @@ if __name__ == '__main__':
 
     M = [CartesianFeature(np.array([[-40, 5]]).T),
            CartesianFeature(np.array([[-6, 40]]).T),
-
-           CartesianFeature(np.array([[-5, 25]]).T),
+           CartesianFeature(np.array([[-6, 25]]).T),
            CartesianFeature(np.array([[-3, 50]]).T),
            CartesianFeature(np.array([[-20, 3]]).T),
            CartesianFeature(np.array([[40,-40]]).T)]  # feature map. Position of 2 point features in the world frame.
