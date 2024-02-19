@@ -194,6 +194,22 @@ class FEKFSLAM(FEKFMBL):
         """
 
         ## To be completed by the student
+        uk, Qk = self.GetInput()
+        xk_bar, Pk_bar = self.Prediction(uk, Qk, xk_1, Pk_1)
+        zm, Rm, Hm, Vm = self.GetMeasurements()
+        self.zm = zm
+        zf, Rf = self.GetFeatures()
+        self.nz = len(zf) # if zf is not None else 0 # I don't need it anymore
+        self.Hp = self.DataAssociation(xk_bar, Pk_bar, zf, Rf)
+        zk, Rk, Hk, Vk, znp, Rnp = self.StackMeasurementsAndFeatures(zm, Rm, Hm, Vm, zf, Rf, self.Hp)
+
+        if zk is not None:
+            xk, Pk = self.Update(zk, Rk, xk_bar, Pk_bar, Hk, Vk)
+        else:
+            xk, Pk = xk_bar, Pk_bar
+
+        self.xk, self.Pk = self.AddNewFeatures(xk, Pk, znp, Rnp)
+
 
         # Use the variable names zm, zf, Rf, znp, Rnp so that the plotting functions work
         self.Log(self.robot.xsk, self._GetRobotPose(self.xk), self._GetRobotPoseCovariance(self.Pk),
