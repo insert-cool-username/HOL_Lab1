@@ -208,8 +208,8 @@ class FEKFSLAM(FEKFMBL):
         else:
             xk, Pk = xk_bar, Pk_bar
 
-        self.xk, self.Pk = self.AddNewFeatures(xk, Pk, znp, Rnp) #ADDED
-
+        #self.xk, self.Pk = self.AddNewFeatures(xk, Pk, znp, Rnp) #ADDED
+        self.xk, self.Pk = xk, Pk
 
         # Use the variable names zm, zf, Rf, znp, Rnp so that the plotting functions work
         self.Log(self.robot.xsk, self._GetRobotPose(self.xk), self._GetRobotPoseCovariance(self.Pk),
