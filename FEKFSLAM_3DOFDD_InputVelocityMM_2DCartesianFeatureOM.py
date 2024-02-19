@@ -23,7 +23,8 @@ class FEKFSLAM_3DOFDD_InputVelocityMM_2DCartesianFeatureOM(FEKFSLAM2DCartesianFe
 if __name__ == '__main__':
 
     M = [CartesianFeature(np.array([[-40, 5]]).T),
-           CartesianFeature(np.array([[-5, 40]]).T),
+           CartesianFeature(np.array([[-6, 40]]).T),
+
            CartesianFeature(np.array([[-5, 25]]).T),
            CartesianFeature(np.array([[-3, 50]]).T),
            CartesianFeature(np.array([[-20, 3]]).T),
