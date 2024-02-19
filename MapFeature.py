@@ -204,7 +204,7 @@ class MapFeature:
         # h(xk_bar,vk)=(-) xk_bar) [+] x_Fj + vk
         # TODO: To be implemented by the student
         NxB = self.GetRobotPose(xk_bar)
-        Nx_Fj = self.M[Fj]
+        Nx_Fj = np.setdiff1d(xk_bar, NxB)
 
         #print(type(NxB), type(Nx_Fj))
         return self.s2o((NxB.ominus()).boxplus(Nx_Fj))
@@ -230,7 +230,8 @@ class MapFeature:
         # J_hfjx = J_s2o @ J_1[+] * J_(-)
         # TODO: To be implemented by the student
         NxB = self.GetRobotPose(xk)
-        Nx_Fj = self.M[int(Fj)]
+        Nx_F = np.setdiff1d(xk, NxB)
+        Nx_Fj = Nx_F[int(Fj)]
         Jp = (self.J_s2o(NxB.ominus().boxplus(Nx_Fj))) @ (NxB.ominus().J_1boxplus(Nx_Fj)) @ NxB.J_ominus()
         return Jp
 
