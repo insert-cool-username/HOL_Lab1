@@ -80,11 +80,56 @@ class FEKFSLAM(FEKFMBL):
         :return: [xk_plus, Pk_plus] state vector mean and covariance after adding the new features
         """
 
-        assert znp.size > 0, "AddNewFeatures: znp is empty"
-        
-        ## To be completed by the student
+        # assert znp.size > 0, "AddNewFeatures: znp is empty" # I commented it because in my code znp is a list
 
-        # return xk_plus, Pk_plus
+        ## To be completed by the student
+        # znp: List of features
+
+        xk_1_R = Pose3D(xk[0:self.xB_dim, 0:self.xB_dim])   # Extract robot's pose
+        Pk_1_robot = Pk[0:self.xB_dim, 0:self.xB_dim]       # Extract covariance of the robot
+
+        f2add = len(znp)    # Number of features to add
+        if f2add == 0:
+            # No features to add
+            return xk, Pk
+
+        xk_plus = xk     # Initialization of state vector
+        
+        # Pk_plus = np.zeros((Pk.shape[0] + f2add*self.xF_dim, Pk.shape[1] + f2add*self.xF_dim)) # Initialization of Pk_plus size
+        # Pk_plus[0:Pk.shape[0], 0:Pk.shape[1]] = Pk
+        for i in range(f2add):
+            nf = int((Pk.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features included in the current covariance matrix
+
+            # State Vector
+            NxFi = self.g(xk_1_R, znp[i])     # Inverse sensor model, compute feature pose wrt N-frame (NxB [+] BxF)
+            xk_plus = np.vstack((xk_plus, NxFi))
+
+            # Covariance of feature i (red)
+            Jgxi = self.Jgx(xk_1_R, znp[i])
+            Jgvi = self.Jgv(xk_1_R, znp[i])
+            NpFi = Jgxi @ Pk_1_robot @ Jgxi.T + Jgvi @ Rnp[i] @ Jgvi.T
+
+            # Correlated Covariance btw robot pose and features
+            row1_yellowMAT = Pk[0:self.xB_dim, :]       # Covariances with correlation btw robot pose and feature
+            if Pk.shape[0] == self.xB_dim:  # I don't have features in the state vector yet, therefore Pk only has the covariance of the robot
+                green_row = Jgxi @ Pk
+            else:
+                temp0 = np.split(row1_yellowMAT, [self.xB_dim], axis=1)
+                temp1 = np.hsplit(temp0[1], nf)
+                green_row = np.hstack((Jgxi @ temp0[0], Jgxi @ temp1[0]))    # Stack the arrays horizontally
+            
+            # Full Pk_plus
+            Pk_plus_top    = np.hstack((Pk,green_row.T))
+            Pk_plus_bottom = np.hstack((green_row,NpFi))
+            Pk_plus = np.vstack((Pk_plus_top,Pk_plus_bottom))
+            
+            Pk = Pk_plus
+        
+        # Covariance Matrix
+        # Pk_plus = np.full((f2add*self.xF_dim + self.xB_dim, f2add*self.xF_dim  + self.xB_dim),0.4)
+        # Pk_plus[0:self.xB_dim, 0:self.xB_dim] = Pk
+
+        return xk_plus, Pk_plus
 
     def Prediction(self, uk, Qk, xk_1, Pk_1):
         """
@@ -176,9 +221,44 @@ class FEKFSLAM(FEKFMBL):
         :param Pk_1: Covariance of the state vector at time step k-1
         :return: [xk_bar, Pk_bar] predicted state vector mean and covariance at time step k
         """
+        ## To be completed by the student
+        self.xk_1 = xk_1 if xk_1 is not None else self.xk_1
+        self.Pk_1 = Pk_1 if Pk_1 is not None else self.Pk_1
 
-       ## To be completed by the student
+        self.uk = uk;
+        self.Qk = Qk  # store the input and noise covariance for logging
 
+        # Robot Pose
+        
+        # xk_1_R: Previous Robot Pose
+        xk_1_R = Pose3D(xk_1[0:self.xB_dim, 0:self.xB_dim]) # Extract the part corresponding to the robot's previous pose
+        xk_1[0:self.xB_dim, 0:self.xB_dim] = self.f(xk_1_R, uk) # Compute new pose
+
+        # Covariance of robot pose
+        Ak = self.Jfx(xk_1_R, uk)
+        Wk = self.Jfw(xk_1_R)
+        
+        Pk_1_robot = Pk_1[0:self.xB_dim, 0:self.xB_dim]
+        Pk_robot = Ak @ Pk_1_robot @ Ak.T + Wk @ Qk @ Wk.T
+        
+        # Correlated covariances between robot pose & features
+        nf = int((Pk_1.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features
+        columns_to_pick = nf * self.xF_dim  # Computes how many columns we need to pick from Pk_1
+        NpBF1_Fn = Pk_1[0:self.xB_dim, -columns_to_pick:]       # Covariances with correlation btw robot pose and feature
+        green_row = Ak @ np.hsplit(NpBF1_Fn, self.xF_dim)
+        green_row = np.hstack(green_row)    # Stack the arrays horizontally
+
+        # Correlated covariances between features
+        yellow_mat = Pk_1[self.xB_dim:, -columns_to_pick:]
+
+        # Full Pk_bar
+        Pk_bar_top    = np.hstack((Pk_robot,green_row))
+        Pk_bar_bottom = np.hstack((green_row.T,yellow_mat))
+        Pk_bar = np.vstack((Pk_bar_top,Pk_bar_bottom))
+
+        self.xk_bar = xk_1
+        self.Pk_bar = Pk_bar
+        return self.xk_bar, self.Pk_bar
         # return xk_bar, Pk_bar
 
     def Localize(self, xk_1, Pk_1):
@@ -194,13 +274,55 @@ class FEKFSLAM(FEKFMBL):
         """
 
         ## To be completed by the student
+        uk, Qk = self.GetInput()
+        xk_bar, Pk_bar = self.Prediction(uk, Qk, xk_1, Pk_1)
+        zm, Rm, Hm, Vm = self.GetMeasurements()
+        self.zm = zm
+        zf, Rf = self.GetFeatures()
+        self.nz = len(zf) # if zf is not None else 0 # I don't need it anymore
+        self.Hp = self.DataAssociation(xk_bar, Pk_bar, zf, Rf)
+        zk, Rk, Hk, Vk, znp, Rnp = self.StackMeasurementsAndFeatures(zm, Rm, Hm, Vm, zf, Rf, self.Hp)
+
+        if zk is not None:
+            xk, Pk = self.Update(zk, Rk, xk_bar, Pk_bar, Hk, Vk)
+        else:
+            xk, Pk = xk_bar, Pk_bar
+
+        # xk,Pk = self.AddNewFeatures(xk,Pk,znp,Rnp)
+
+        self.xk = xk
+        self.Pk = Pk
 
         # Use the variable names zm, zf, Rf, znp, Rnp so that the plotting functions work
-        self.Log(self.robot.xsk, self._GetRobotPose(self.xk), self._GetRobotPoseCovariance(self.Pk),
-                 self._GetRobotPose(self.xk_bar), zm)  # log the results for plotting
+        # self.Log(self.robot.xsk, self._GetRobotPose(self.xk), self._GetRobotPoseCovariance(self.Pk),
+        #          self._GetRobotPose(self.xk_bar), zm)  # log the results for plotting
 
         self.PlotUncertainty(zf, Rf, znp, Rnp)
         return self.xk, self.Pk
+    
+    def LocalizationLoop(self, x0, P0, usk):
+        xk_1 = x0
+        Pk_1 = P0
+        xsk_1 = self.robot.xsk_1
+
+        zf,Rf = self.GetFeatures()
+        # zf = [CartesianFeature(np.array([[4, 4]]).T),
+        #       CartesianFeature(np.array([[8, 8]]).T)]
+        # Rf = [np.eye(2),np.eye(2)]
+
+        xk_1, Pk_1 = self.AddNewFeatures(xk_1,Pk_1,zf,Rf)
+
+        for self.k in range(self.kSteps):
+            xsk = self.robot.fs(xsk_1, usk)  # Simulate the robot motion
+            xk, Pk = self.Localize(xk_1, Pk_1)  # Localize the robot
+            xsk_1 = xsk  # current state becomes previous state for next iteration
+            xk_1 = xk
+            Pk_1 = Pk
+            # self.PlotUncertainty(xk,Pk) # Tanakrit commented to make the MapBased Localization work
+            #, but when I try the EKF input velocity, it didn't plot things
+
+        self.PlotState()  # plot the state estimation results
+        plt.show()
 
     def PlotMappedFeaturesUncertainty(self):
         """
@@ -234,7 +356,7 @@ class FEKFSLAM(FEKFMBL):
         """
         if self.k % self.robot.visualizationInterval == 0:
             self.PlotRobotUncertainty()
-            self.PlotFeatureObservationUncertainty(znp, Rnp,'b')
-            self.PlotFeatureObservationUncertainty(zf, Rf,'g')
-            self.PlotExpectedFeaturesObservationsUncertainty()
-            self.PlotMappedFeaturesUncertainty()
+            # self.PlotFeatureObservationUncertainty(znp, Rnp,'b')
+            # self.PlotFeatureObservationUncertainty(zf, Rf,'g')
+            # self.PlotExpectedFeaturesObservationsUncertainty()
+            # self.PlotMappedFeaturesUncertainty()
