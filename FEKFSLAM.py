@@ -85,13 +85,13 @@ class FEKFSLAM(FEKFMBL):
         ## To be completed by the student
         # znp: List of features
 
-        xk_1_R = Pose3D(xk[0:self.xB_dim, 0:self.xB_dim])   # Extract robot's pose
-        Pk_1_robot = Pk[0:self.xB_dim, 0:self.xB_dim]       # Extract covariance of the robot
-
         f2add = len(znp)    # Number of features to add
         if f2add == 0:
             # No features to add
             return xk, Pk
+
+        xk_1_R = Pose3D(xk[0:self.xB_dim, 0:self.xB_dim])   # Extract robot's pose
+        Pk_1_robot = Pk[0:self.xB_dim, 0:self.xB_dim]       # Extract covariance of the robot
 
         xk_plus = xk     # Initialization of state vector
         
@@ -116,7 +116,10 @@ class FEKFSLAM(FEKFMBL):
             else:
                 temp0 = np.split(row1_yellowMAT, [self.xB_dim], axis=1)
                 temp1 = np.hsplit(temp0[1], nf)
-                green_row = np.hstack((Jgxi @ temp0[0], Jgxi @ temp1[0]))    # Stack the arrays horizontally
+                green_row = Jgxi @ temp0[0]     # 1st Element of green_row
+                for each_NpBkFi in temp1:       # For all other elements
+                    column = Jgxi @ each_NpBkFi
+                    green_row = np.hstack((green_row, column))    # Stack the arrays horizontally
             
             # Full Pk_plus
             Pk_plus_top    = np.hstack((Pk,green_row.T))
@@ -241,11 +244,17 @@ class FEKFSLAM(FEKFMBL):
         Pk_1_robot = Pk_1[0:self.xB_dim, 0:self.xB_dim]
         Pk_robot = Ak @ Pk_1_robot @ Ak.T + Wk @ Qk @ Wk.T
         
+        # Handling case where we don't have feature in the vector state yet
+        nf = int((Pk_1.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features included in the current covariance matrix
+        if nf == 0:     # No features in the vector state
+            self.xk_bar = xk_1
+            self.Pk_bar = Pk_robot
+            return self.xk_bar, self.Pk_bar
+
         # Correlated covariances between robot pose & features
-        nf = int((Pk_1.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features
         columns_to_pick = nf * self.xF_dim  # Computes how many columns we need to pick from Pk_1
         NpBF1_Fn = Pk_1[0:self.xB_dim, -columns_to_pick:]       # Covariances with correlation btw robot pose and feature
-        green_row = Ak @ np.hsplit(NpBF1_Fn, self.xF_dim)
+        green_row = Ak @ np.hsplit(NpBF1_Fn, nf)
         green_row = np.hstack(green_row)    # Stack the arrays horizontally
 
         # Correlated covariances between features

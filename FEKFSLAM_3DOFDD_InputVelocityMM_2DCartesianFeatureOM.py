@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     auv = FEKFSLAM_3DOFDD_InputVelocityMM_2DCartesianFeatureOM([], alpha, kSteps, robot)
 
-    P0 = np.zeros((3, 3))
+    P0 = np.eye((3)) * 0.1
     usk=np.array([[0.5, 0.03]]).T
     auv.LocalizationLoop(x0, P0, usk)
 
