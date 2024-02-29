@@ -15,6 +15,20 @@ class FEKFSLAM_3DOFDD_InputVelocityMM_2DCartesianFeatureOM(FEKFSLAM2DCartesianFe
        
         super().__init__(*args)
 
+    def GetMeasurements(self):
+        zk, Rk, Hk, Vk = super().GetMeasurements()
+        nf = int((len(self.xk_1) - self.xB_dim) / self.xF_dim)
+        Hk = np.hstack((Hk, np.zeros((1,nf * self.xF_dim))))
+
+        return zk, Rk, Hk, Vk
+
+    def h(self, xk):  #:hm(self, xk):
+        # TODO: To be completed by the student
+        h = np.array([[0, 0, 1]])
+        nf = int((len(self.xk_1) - self.xB_dim) / self.xF_dim)
+        h = np.hstack((h, np.zeros((1,nf * self.xF_dim))))
+        h = h @ xk
+        return h  # return the expected observations
 
     # def GetFeatures(self):
     # Get features is inherited from EKF_3DOFDifferentialDriveInputDisplacement

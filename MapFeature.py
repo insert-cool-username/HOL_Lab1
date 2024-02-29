@@ -132,27 +132,7 @@ class MapFeature:
                 zf = np.concatenate((zf, zfj)) if zf is not None else zfj
         return zf
 
-    # NOT ANYMORE
-    # def Jhfx(self, xk):  # Jacobian wrt x of the feature observation function for all zf observations
-    #     """
-    #     Computes the Jacobian of the feature observation function :meth:`hf` (eq. :eq:`eq-hf`), with respect to the state vector :math:`\\bar{x}_k`:
-
-    #     .. math::
-    #         J_{hfx}=\\frac{\\partial h_f(x_k,v_k)}{\\partial x_k}=\\begin{bmatrix} \\frac{\\partial h_{F_{a}}(x_k,v_k)}{\\partial x_k} \\\\ \\vdots \\\\ \\frac{\\partial h_{F_{b}}(x_k,v_k)}{\\partial x_k} \\\\ \\vdots \\\\ \\frac{\\partial h_{F_{c}}(x_k,v_k)}{\\partial x_k} \\end{bmatrix}
-    #         =\\begin{bmatrix} J_{h_{F_a}} \\\\ \\vdots \\\\ J_{h_{F_b}} \\\\ \\vdots \\\\ J_{h_{F_c}} \\end{bmatrix}
-    #         :label: eq-Jhfx
-
-    #     where :math:`J_{h_{F_j}}` is the Jacobian of the observation function :meth:`hfj` (eq. :eq:`eq-Jhfjx`) for the feature :math:`F_j`and observation :math:`z_{f_i}`.
-    #     To do it, given a vector of observations :math:`z_f=[z_{f_1}~\\cdots~z_{f_i}~\\cdots~z_{f_{n_{zf}}}]` this method iterates over each feature observation :math:`z_{f_i}` calling the method :meth:`Jhfj` to compute
-    #     the Jacobian of the observation function for each feature observation (:math:`J_{hfj}`), collecting all them in the returned Jacobian matrix :math:`J_{hfx}`.
-
-    #     :param xk: state vector mean :math:`\\hat x_k`.
-    #     :return: Jacobian of the observation function :meth:`hf` with respect ro the robot pose :math:`J_{hfx}=\\frac{\\partial h_f(\\bar{x}_k,v_{f_k})}{\\bar{x}_k}`
-    #     """
-
-    #     # TODO: To be implemented by the student
-
-    #     return J
+   
 
     def Jhfv(self, xk):  # Jacobian wrt v of the observation function for a feature
         """

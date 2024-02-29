@@ -23,6 +23,26 @@ class FEKFSLAM(FEKFMBL):
         self.plt_MappedFeaturesEllipses = []
 
         return
+    
+    def hm(self,xk):
+        """
+        Measurement observation model. This method computes the expected measurements :math:`h_m(x_k,v_m)` given the
+        mean state vector :math:`x_k` and the measurement noise :math:`v_m`. It is implemented by calling to the ancestor
+        class :meth:`EKF.EKF.h` method.
+
+        :param xk: mean state vector.
+        :return: expected measruments.
+        """
+
+        # TODO: To be completed by the student
+        if self.zm is not None:
+
+            hm = EKF_3DOFDifferentialDriveInputDisplacement.h(self, xk)
+            print("2")
+            
+        else:
+            hm = None
+        return hm
 
  
     def AddNewFeatures(self, xk, Pk, znp, Rnp):

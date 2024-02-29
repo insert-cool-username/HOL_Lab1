@@ -90,6 +90,8 @@ class FEKFMBL(GFLocalization, MapFeature):
         if self.zm is not None:
 
             hm = EKF_3DOFDifferentialDriveInputDisplacement.h(self, xk)
+
+            
         else:
             hm = None
         return hm

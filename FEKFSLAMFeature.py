@@ -8,6 +8,46 @@ class FEKFSLAMFeature(MapFeature):
     while the latter uses the robot pose and the feature map as state variables. This means that few methods provided by
     class need to be overridden to gather the information from state vector instead that from the deterministic map.
     """
+    def hf(self, xk):  # Observation function for al zf observations
+        """
+        This is the direct observation model, implementing the feature observation equation for the data
+        association hypothesis :math:`\mathcal{H}`, the features observation vector :math:`z_f, the state vector :math:`x_k`,
+        and the observation noise :math:`v_k`:
+
+        .. math::
+            \mathcal{H}&=[F_a~\\cdots~F_b~\\cdots~F_c]\\\\
+            z_f&=[z_{f_1}^T~\\cdots~z_{f_i}^T~\\cdots~z_{f_{n_{zf}}}^T]^T\\\\
+            x_k&=[^Nx_B^T~x_{rest}^T]^T\\\\
+            v_k&=[v_{f1_k}^T~\\cdots~v_{fi_k}^T~\\cdots~v_{fn_{zf_k}}^T]^T\\\\\
+            z_f&=h_f(x_k,v_k) \\\\
+            :label: eq-hf
+
+        which may be expanded as follows:
+
+        .. math::
+            \\begin{bmatrix} z_{f_1} \\\\ \\vdots  \\\\ z_{f_i} \\\\ \\vdots \\\\ z_{n_{zf}} \\end{bmatrix} = \\begin{bmatrix} h_{F_a}(x_k,v_k) \\\\ \\vdots \\\\ h_{F_b}(x_k,v_k) \\\\ \\vdots \\\\ h_{Fc}(x_k,v_k) \\end{bmatrix}
+            = \\begin{bmatrix} s2o(\\ominus ^Nx_B \\boxplus^Nx_{F_{a}})+ v_{f1_k}\\\\ \\vdots \\\\  s2o(\\ominus ^Nx_B \\boxplus^Nx_{F_{b}})+ v_{fi_k}\\\\ \\vdots \\\\ s2o(\\ominus ^Nx_B \\boxplus ^Nx_{F_{c}}) + v_{fn_{zf}}\\end{bmatrix}
+            :label: eq-hf-element-wise
+
+        being :math:`h_{F_j}(\cdot)` (:meth:`hfj`) the observation function (eq. :eq:`eq-hfj`) for the data association hypothesis :math:`\\mathcal{H}` and  :meth:`s2o` the conversion
+        function from the storage representation to the observation one.
+
+        The method computes the expected observations :math:`h_{f}` for the observed features contained within the :math:`z_{f}` features observation vector.
+        To do it, it iterates over each feature observation :math:`z_{f_i}` calling the method :meth:`hfj` for its corresponding associated feature :math:`\mathcal{H}_i=F_j`
+        to compute the expected observation :math:`h_{F_j}`, collecting all them in the returned vector.
+
+        :param xk: state vector mean :math:`\\hat x_k`.
+        :return: vector of expected features observations corresponding to the vector of observed features :math:`z_f`.
+        """
+        
+        zf = None
+        for i in range(self.nz): # nz: Number of observations
+            Fj = self.Hp[i]      # What is H? -> Data Association Matrix
+            if Fj is not None:
+                zfj = self.hfj(xk, Fj)
+                zf = np.concatenate((zf, zfj)) if zf is not None else zfj
+        return zf
+
     def hfj(self, xk_bar, Fj):  # Observation function for zf_i and x_Fj
         """
         This method implements the direct observation model for a single feature observation  :math:`z_{f_i}` , so it implements its related

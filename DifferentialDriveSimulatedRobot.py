@@ -74,11 +74,11 @@ class DifferentialDriveSimulatedRobot(SimulatedRobot):
         self.Polar2D_max_range = 50  # maximum Polar2D range, used to simulate the field of view
         self.Rfp = np.diag(np.array([1 ** 2, np.deg2rad(5) ** 2]))  # covariance of simulated Polar2D feature noise
 
-        self.xy_feature_reading_frequency = 50000  # frequency of XY feature readings
+        self.xy_feature_reading_frequency = 10  # frequency of XY feature readings
         self.xy_max_range = 25  # maximum XY range, used to simulate the field of view
         self.Feature2D_covariance = np.diag(np.array([0.25**2, 0.25**2])) # Covariance of 2D features
 
-        self.yaw_reading_frequency = 50000  # frequency of Yasw readings
+        self.yaw_reading_frequency = 10  # frequency of Yasw readings
         self.v_yaw_std = np.deg2rad(5)  # std deviation of simulated heading noise
 
     def fs(self, xsk_1, usk):  # input velocity motion model with velocity noise
