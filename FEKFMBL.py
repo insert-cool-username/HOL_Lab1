@@ -304,6 +304,7 @@ class FEKFMBL(GFLocalization, MapFeature):
             Rp = scipy.linalg.block_diag(Rp, Rfi) if Rp is not None else Rfi
             
             jhf = self.Jhfjx(self.xk_bar, j)
+
             Hp = np.concatenate((Hp, jhf)) if Hp is not None else jhf
 
             eye = np.eye(self.zfi_dim)

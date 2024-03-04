@@ -366,3 +366,37 @@ class FEKFSLAM(FEKFMBL):
             # self.PlotFeatureObservationUncertainty(zf, Rf,'g')
             # self.PlotExpectedFeaturesObservationsUncertainty()
             # self.PlotMappedFeaturesUncertainty()
+
+    def DataAssociation(self, xk, Pk, zf, Rf):
+        """
+        Data association algorithm. Given state vector (:math:`x_k` and :math:`P_k`) including the robot pose and a set of feature observations
+        :math:`z_f` and its covariance matrices :math:`R_f`,  the algorithm  computes the expected feature
+        observations :math:`h_f` and its covariance matrices :math:`P_f`. Then it calls an association algorithms like
+        :meth:`ICNN` (JCBB, etc.) to build a pairing hypothesis associating the observed features :math:`z_f`
+        with the expected features observations :math:`h_f`.
+
+        The vector of association hypothesis :math:`H` is stored in the :attr:`H` attribute and its dimension is the
+        number of observed features within :math:`z_f`. Given the :math:`j^{th}` feature observation :math:`z_{f_j}`, *self.H[j]=i*
+        means that :math:`z_{f_j}` has been associated with the :math:`i^{th}` feature . If *self.H[j]=None* means that :math:`z_{f_j}`
+        has not been associated either because it is a new observed feature or because it is an outlier.
+
+        :param xk: mean state vector including the robot pose
+        :param Pk: covariance matrix of the state vector
+        :param zf: vector of feature observations
+        :param Rf: Covariance matrix of the feature observations
+        :return: The vector of asociation hypothesis H
+        """
+
+        # TODO: To be completed by the student
+        hF_list = []
+        PF_list = []
+        for i in range(self.nf):
+            hF_list.append(self.hfj(xk,i)) # Sensor Model, it tells me the pose of feature i wrt robot frame
+            j = self.Jhfjx(xk,i)[0] # Jacobian of feature i, used to compute covariance of feature i
+            
+            PFi =  j @ self.GetRobotPoseCovariance(Pk) @ j.T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
+
+            PF_list.append(PFi) 
+
+        Hp = self.ICNN(hF_list,PF_list,zf,Rf,self.zfi_dim)
+        return Hp
