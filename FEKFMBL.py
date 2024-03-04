@@ -181,7 +181,7 @@ class FEKFMBL(GFLocalization, MapFeature):
             hF_list.append(self.hfj(xk,i)) # Sensor Model, it tells me the pose of feature i wrt robot frame
             j = self.Jhfjx(xk,i) # Jacobian of feature i, used to compute covariance of feature i
             
-            PFi =  j @ Pk @ j.T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
+            PFi =  j @ self.GetRobotPoseCovariance(Pk) @ j.T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
 
             PF_list.append(PFi) 
 

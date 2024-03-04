@@ -95,10 +95,9 @@ class FEKFSLAM(FEKFMBL):
 
         xk_plus = xk     # Initialization of state vector
         
-        # Pk_plus = np.zeros((Pk.shape[0] + f2add*self.xF_dim, Pk.shape[1] + f2add*self.xF_dim)) # Initialization of Pk_plus size
-        # Pk_plus[0:Pk.shape[0], 0:Pk.shape[1]] = Pk
+        
         for i in range(f2add):
-            nf = int((Pk.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features included in the current covariance matrix
+            nf = int((Pk.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features included in the current covariance matrix (local variable)
 
             # State Vector
             NxFi = self.g(xk_1_R, znp[i])     # Inverse sensor model, compute feature pose wrt N-frame (NxB [+] BxF)
@@ -128,9 +127,7 @@ class FEKFSLAM(FEKFMBL):
             
             Pk = Pk_plus
         
-        # Covariance Matrix
-        # Pk_plus = np.full((f2add*self.xF_dim + self.xB_dim, f2add*self.xF_dim  + self.xB_dim),0.4)
-        # Pk_plus[0:self.xB_dim, 0:self.xB_dim] = Pk
+        self.nf = int((xk_plus.shape[0] - self.xB_dim) / self.xF_dim)  # We update the number of features in the state vector (attribute of object self)
 
         return xk_plus, Pk_plus
 
