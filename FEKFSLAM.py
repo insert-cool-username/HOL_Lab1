@@ -105,20 +105,19 @@ class FEKFSLAM(FEKFMBL):
         ## To be completed by the student
         # znp: List of features
 
-        xk_1_R = Pose3D(xk[0:self.xB_dim, 0:self.xB_dim])   # Extract robot's pose
-        Pk_1_robot = Pk[0:self.xB_dim, 0:self.xB_dim]       # Extract covariance of the robot
-
         f2add = len(znp)    # Number of features to add
         if f2add == 0:
             # No features to add
             return xk, Pk
 
+        xk_1_R = Pose3D(xk[0:self.xB_dim, 0:self.xB_dim])   # Extract robot's pose
+        Pk_1_robot = Pk[0:self.xB_dim, 0:self.xB_dim]       # Extract covariance of the robot
+
         xk_plus = xk     # Initialization of state vector
         
-        # Pk_plus = np.zeros((Pk.shape[0] + f2add*self.xF_dim, Pk.shape[1] + f2add*self.xF_dim)) # Initialization of Pk_plus size
-        # Pk_plus[0:Pk.shape[0], 0:Pk.shape[1]] = Pk
+        
         for i in range(f2add):
-            nf = int((Pk.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features included in the current covariance matrix
+            nf = int((Pk.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features included in the current covariance matrix (local variable)
 
             # State Vector
             NxFi = self.g(xk_1_R, znp[i])     # Inverse sensor model, compute feature pose wrt N-frame (NxB [+] BxF)
@@ -136,7 +135,10 @@ class FEKFSLAM(FEKFMBL):
             else:
                 temp0 = np.split(row1_yellowMAT, [self.xB_dim], axis=1)
                 temp1 = np.hsplit(temp0[1], nf)
-                green_row = np.hstack((Jgxi @ temp0[0], Jgxi @ temp1[0]))    # Stack the arrays horizontally
+                green_row = Jgxi @ temp0[0]     # 1st Element of green_row
+                for each_NpBkFi in temp1:       # For all other elements
+                    column = Jgxi @ each_NpBkFi
+                    green_row = np.hstack((green_row, column))    # Stack the arrays horizontally
             
             # Full Pk_plus
             Pk_plus_top    = np.hstack((Pk,green_row.T))
@@ -145,9 +147,7 @@ class FEKFSLAM(FEKFMBL):
             
             Pk = Pk_plus
         
-        # Covariance Matrix
-        # Pk_plus = np.full((f2add*self.xF_dim + self.xB_dim, f2add*self.xF_dim  + self.xB_dim),0.4)
-        # Pk_plus[0:self.xB_dim, 0:self.xB_dim] = Pk
+        self.nf = int((xk_plus.shape[0] - self.xB_dim) / self.xF_dim)  # We update the number of features in the state vector (attribute of object self)
 
         return xk_plus, Pk_plus
 
@@ -261,11 +261,17 @@ class FEKFSLAM(FEKFMBL):
         Pk_1_robot = Pk_1[0:self.xB_dim, 0:self.xB_dim]
         Pk_robot = Ak @ Pk_1_robot @ Ak.T + Wk @ Qk @ Wk.T
         
+        # Handling case where we don't have feature in the vector state yet
+        nf = int((Pk_1.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features included in the current covariance matrix
+        if nf == 0:     # No features in the vector state
+            self.xk_bar = xk_1
+            self.Pk_bar = Pk_robot
+            return self.xk_bar, self.Pk_bar
+
         # Correlated covariances between robot pose & features
-        nf = int((Pk_1.shape[0] - self.xB_dim) / self.xF_dim)   # Number of features
         columns_to_pick = nf * self.xF_dim  # Computes how many columns we need to pick from Pk_1
         NpBF1_Fn = Pk_1[0:self.xB_dim, -columns_to_pick:]       # Covariances with correlation btw robot pose and feature
-        green_row = Ak @ np.hsplit(NpBF1_Fn, self.xF_dim)
+        green_row = Ak @ np.hsplit(NpBF1_Fn, nf)
         green_row = np.hstack(green_row)    # Stack the arrays horizontally
 
         # Correlated covariances between features
@@ -380,3 +386,37 @@ class FEKFSLAM(FEKFMBL):
             # self.PlotFeatureObservationUncertainty(zf, Rf,'g')
             # self.PlotExpectedFeaturesObservationsUncertainty()
             # self.PlotMappedFeaturesUncertainty()
+
+    def DataAssociation(self, xk, Pk, zf, Rf):
+        """
+        Data association algorithm. Given state vector (:math:`x_k` and :math:`P_k`) including the robot pose and a set of feature observations
+        :math:`z_f` and its covariance matrices :math:`R_f`,  the algorithm  computes the expected feature
+        observations :math:`h_f` and its covariance matrices :math:`P_f`. Then it calls an association algorithms like
+        :meth:`ICNN` (JCBB, etc.) to build a pairing hypothesis associating the observed features :math:`z_f`
+        with the expected features observations :math:`h_f`.
+
+        The vector of association hypothesis :math:`H` is stored in the :attr:`H` attribute and its dimension is the
+        number of observed features within :math:`z_f`. Given the :math:`j^{th}` feature observation :math:`z_{f_j}`, *self.H[j]=i*
+        means that :math:`z_{f_j}` has been associated with the :math:`i^{th}` feature . If *self.H[j]=None* means that :math:`z_{f_j}`
+        has not been associated either because it is a new observed feature or because it is an outlier.
+
+        :param xk: mean state vector including the robot pose
+        :param Pk: covariance matrix of the state vector
+        :param zf: vector of feature observations
+        :param Rf: Covariance matrix of the feature observations
+        :return: The vector of asociation hypothesis H
+        """
+
+        # TODO: To be completed by the student
+        hF_list = []
+        PF_list = []
+        for i in range(self.nf):
+            hF_list.append(self.hfj(xk,i)) # Sensor Model, it tells me the pose of feature i wrt robot frame
+            j = self.Jhfjx(xk,i)[0] # Jacobian of feature i, used to compute covariance of feature i
+            
+            PFi =  j @ self.GetRobotPoseCovariance(Pk) @ j.T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
+
+            PF_list.append(PFi) 
+
+        Hp = self.ICNN(hF_list,PF_list,zf,Rf,self.zfi_dim)
+        return Hp

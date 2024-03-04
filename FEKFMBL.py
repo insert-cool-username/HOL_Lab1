@@ -183,7 +183,7 @@ class FEKFMBL(GFLocalization, MapFeature):
             hF_list.append(self.hfj(xk,i)) # Sensor Model, it tells me the pose of feature i wrt robot frame
             j = self.Jhfjx(xk,i) # Jacobian of feature i, used to compute covariance of feature i
             
-            PFi =  j @ Pk @ j.T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
+            PFi =  j @ self.GetRobotPoseCovariance(Pk) @ j.T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
 
             PF_list.append(PFi) 
 
@@ -306,6 +306,7 @@ class FEKFMBL(GFLocalization, MapFeature):
             Rp = scipy.linalg.block_diag(Rp, Rfi) if Rp is not None else Rfi
             
             jhf = self.Jhfjx(self.xk_bar, j)
+
             Hp = np.concatenate((Hp, jhf)) if Hp is not None else jhf
 
             eye = np.eye(self.zfi_dim)

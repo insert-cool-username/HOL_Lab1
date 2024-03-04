@@ -74,11 +74,27 @@ class FEKFSLAMFeature(MapFeature):
         :param Fj: map index of the observed feature.
         :return: expected observation of the feature :math:`^Nx_{F_j}`
         """
+<<<<<<< HEAD
         
         NxB = self.GetRobotPose(xk_bar)
         Nx_Fj = np.setdiff1d(xk_bar, NxB)
 
         #print(type(NxB), type(Nx_Fj))
+=======
+
+        # This method is called from DataAssociation and Fj = i (index of for loop) if there is any features in the state vector
+        NxB = self.GetRobotPose(xk_bar) # Get Robot Pose
+        xBpose_dim = NxB.shape[0]   # Saves dimension of the robot pose, the proper way to do it might be instead of using 'xBpose_dim'
+                                    # use 'xB_dim' as in 'FEKFMBL'. If we include velocities in our state vector, I should start taking
+                                    # features from the row 7 instead of row 4 (for example). In this case it will start taking features
+                                    # from row 4 even if later we expand our state vector to include velocities
+        xF_dim = self.Feature.feature.shape[0]  # Feature dimensionality, as it is implemented in 'FEKFMBL'
+
+        Fj_start = (Fj * xF_dim) + xBpose_dim
+        Fj_end = Fj_start + xF_dim
+        Nx_Fj = CartesianFeature(xk_bar[Fj_start:Fj_end,0].reshape(2,1))
+
+>>>>>>> david
         return self.s2o((NxB.ominus()).boxplus(Nx_Fj))
 
     def Jhfjx(self, xk, Fj):  # Observation function for zf_i and x_Fj
@@ -110,10 +126,24 @@ class FEKFSLAMFeature(MapFeature):
         :param Fj: map index of the observed feature
         :return: Jacobian matrix defined in eq. :eq:`eq-Jhfjx`        """
 
+<<<<<<< HEAD
         ## To be completed by the student
         NxB = self.GetRobotPose(xk)
         Nx_F = np.setdiff1d(xk, NxB)
         Nx_Fj = Nx_F[int(Fj)]
+=======
+        # This method is called from DataAssociation and Fj = i (index of for loop) if there is any features in the state vector
+        NxB = self.GetRobotPose(xk) # Get Robot Pose
+        xBpose_dim = NxB.shape[0]   # Saves dimension of the robot pose, the proper way to do it might be instead of using 'xBpose_dim'
+                                    # use 'xB_dim' as in 'FEKFMBL'. If we include velocities in our state vector, I should start taking
+                                    # features from the row 7 instead of row 4 (for example). In this case it will start taking features
+                                    # from row 4 even if later we expand our state vector to include velocities
+        xF_dim = self.Feature.feature.shape[0]  # Feature dimensionality, as it is implemented in 'FEKFMBL'
+
+        Fj_start = (Fj * xF_dim) + xBpose_dim
+        Fj_end = Fj_start + xF_dim
+        Nx_Fj = CartesianFeature(xk[Fj_start:Fj_end,0].reshape(2,1))
+>>>>>>> david
         Jp = (self.J_s2o(NxB.ominus().boxplus(Nx_Fj))) @ (NxB.ominus().J_1boxplus(Nx_Fj)) @ NxB.J_ominus()
         return Jp
 
