@@ -412,9 +412,9 @@ class FEKFSLAM(FEKFMBL):
         PF_list = []
         for i in range(self.nf):
             hF_list.append(self.hfj(xk,i)) # Sensor Model, it tells me the pose of feature i wrt robot frame
-            j = self.Jhfjx(xk,i)[0] # Jacobian of feature i, used to compute covariance of feature i
+            j = self.Jhfjx(xk,i) # Jacobian of feature i, used to compute covariance of feature i
             
-            PFi =  j @ self.GetRobotPoseCovariance(Pk) @ j.T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
+            PFi =  self.GetRobotPoseCovariance(j) @ self.GetRobotPoseCovariance(Pk) @ self.GetRobotPoseCovariance(j).T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
 
             PF_list.append(PFi) 
 
