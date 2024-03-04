@@ -19,10 +19,6 @@ class FEKFSLAM_3DOFDD_InputVelocityMM_2DCartesianFeatureOM(FEKFSLAM2DCartesianFe
         zk, Rk, Hk, Vk = super().GetMeasurements()
         nf = int((len(self.xk_1) - self.xB_dim) / self.xF_dim)
         Hk = np.hstack((Hk, np.zeros((1,nf * self.xF_dim))))
-<<<<<<< HEAD
-
-=======
->>>>>>> david
         return zk, Rk, Hk, Vk
 
     def h(self, xk):  #:hm(self, xk):
@@ -31,10 +27,7 @@ class FEKFSLAM_3DOFDD_InputVelocityMM_2DCartesianFeatureOM(FEKFSLAM2DCartesianFe
         nf = int((len(self.xk_1) - self.xB_dim) / self.xF_dim)
         h = np.hstack((h, np.zeros((1,nf * self.xF_dim))))
         h = h @ xk
-<<<<<<< HEAD
-=======
         # Falta definir aqui hf
->>>>>>> david
         return h  # return the expected observations
 
     # def GetFeatures(self):
