@@ -318,12 +318,21 @@ class FEKFSLAM(FEKFMBL):
 
         self.xk = xk
         self.Pk = Pk
+        self.Log(self.robot.xsk, xk, Pk, xk_bar, zk)
 
         # Use the variable names zm, zf, Rf, znp, Rnp so that the plotting functions work
         # self.Log(self.robot.xsk, self._GetRobotPose(self.xk), self._GetRobotPoseCovariance(self.Pk),
         #          self._GetRobotPose(self.xk_bar), zm)  # log the results for plotting
 
-        self.PlotUncertainty(zf, Rf, znp, Rnp)
+        zf_new_format = None
+        Rf_new_format = None
+        if zf:
+            for zfi, Rfi in zip(zf, Rf):
+                zf_new_format = np.concatenate([zf_new_format, zfi]) if zf_new_format is not None else zfi
+                Rf_new_format = scipy.linalg.block_diag(Rf_new_format, Rfi) if Rf_new_format is not None else Rfi
+            print("zf new shape", zf_new_format.shape, zf_new_format)
+
+        self.PlotUncertainty(zf_new_format, Rf_new_format, znp, Rnp)
         return self.xk, self.Pk
     
     def LocalizationLoop(self, x0, P0, usk):
@@ -382,10 +391,10 @@ class FEKFSLAM(FEKFMBL):
         """
         if self.k % self.robot.visualizationInterval == 0:
             self.PlotRobotUncertainty()
-            # self.PlotFeatureObservationUncertainty(znp, Rnp,'b')
-            # self.PlotFeatureObservationUncertainty(zf, Rf,'g')
-            # self.PlotExpectedFeaturesObservationsUncertainty()
-            # self.PlotMappedFeaturesUncertainty()
+            self.PlotFeatureObservationUncertainty(znp, Rnp,'b')
+            self.PlotFeatureObservationUncertainty(zf, Rf,'g')
+            self.PlotExpectedFeaturesObservationsUncertainty()
+            self.PlotMappedFeaturesUncertainty()
 
     def DataAssociation(self, xk, Pk, zf, Rf):
         """

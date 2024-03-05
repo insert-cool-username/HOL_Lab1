@@ -220,15 +220,15 @@ class FEKFMBL(GFLocalization, MapFeature):
         self.Pk = Pk
         self.Log(self.robot.xsk, xk, Pk, xk_bar, zk)
 
-        zf_plot = None
-        Rf_plot = None
-        # if zf:
-        #     for zfi, Rfi in zip(zf, Rf):
-        #         zf_plot = np.concatenate([zf_plot, zfi]) if zf_plot is not None else zfi
-        #         Rf_plot = scipy.linalg.block_diag(Rf_plot, Rfi) if Rf_plot is not None else Rfi
-
+        zf_new_format = None
+        Rf_new_format = None
+        if zf:
+            for zfi, Rfi in zip(zf, Rf):
+                zf_new_format = np.concatenate([zf_new_format, zfi]) if zf_new_format is not None else zfi
+                Rf_new_format = scipy.linalg.block_diag(Rf_new_format, Rfi) if Rf_new_format is not None else Rfi
+            # print("zf new shape", zf_new_format.shape, zf_new_format)
             
-        self.PlotUncertainty(zf, Rf)
+        self.PlotUncertainty(zf_new_format, Rf_new_format)
 
         return xk, Pk
 
@@ -323,8 +323,8 @@ class FEKFMBL(GFLocalization, MapFeature):
         :param Rf: covariance matrix of the feature observations
         """
 
-        # zf=BlockArray(zf,self.zfi_dim)
-        # Rf=BlockArray(Rf,self.zfi_dim)
+        zf=BlockArray(zf,self.zfi_dim)
+        Rf=BlockArray(Rf,self.zfi_dim)
 
         if zf is not None:
             # Remove previous feature observation ellipses
@@ -335,12 +335,13 @@ class FEKFMBL(GFLocalization, MapFeature):
             self.plt_zf_line = []
 
         NxB = self.GetRobotPose(self.robot.xsk)
+
         # For all feature observations
-        nzf = 0 if zf is None else len(zf) 
-        for i in range(0, nzf):
-            # print(zf[i])
-            BxF = self.Feature(zf[i])  # feature observation in the B-Frame
-            BRF = Rf[i]  # feature observation covariance in the B-Frame
+        nzf = 0 if zf is None else zf.size // self.zfi_dim 
+        for i in range(nzf):
+            # print("zf", zf, zf.shape, "zfi", zf[[i]])
+            BxF = self.Feature(zf[[i]])  # feature observation in the B-Frame
+            BRF = Rf[[i,i]]  # feature observation covariance in the B-Frame
             NxF = self.g(NxB, BxF)
             J = self.Jgv(NxB, BxF)
             NRf = J @ BRF @ J.T
