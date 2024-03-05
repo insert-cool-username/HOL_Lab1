@@ -330,6 +330,7 @@ class FEKFSLAM(FEKFMBL):
 
         if zk is not None:
             xk, Pk = self.Update(zk, Rk, xk_bar, Pk_bar, Hk, Vk)
+            # xk, Pk = xk_bar, Pk_bar      # Uncomment to try without Update
         else:
             xk, Pk = xk_bar, Pk_bar
 
