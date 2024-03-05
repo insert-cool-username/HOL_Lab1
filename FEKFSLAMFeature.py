@@ -129,13 +129,22 @@ class FEKFSLAMFeature(MapFeature):
         Fj_start = (Fj * xF_dim) + xBpose_dim
         Fj_end = Fj_start + xF_dim
         Nx_Fj = CartesianFeature(xk[Fj_start:Fj_end,0].reshape(2,1))
-        Jp = (self.J_s2o(NxB.ominus().boxplus(Nx_Fj))) @ (NxB.ominus().J_1boxplus(Nx_Fj)) @ NxB.J_ominus()
-        JFj = NxB.J_2boxplus(Nx_Fj)
-        Jp = np.hstack([Jp, np.zeros([JFj.shape[0],JFj.shape[1]*self.nf])])
-        JFj = NxB.ominus().J_2boxplus(Nx_Fj)
-        i = Fj_start + Fj-1
-        Jp[:,i:i+JFj.shape[0]] = JFj
+        J_robot = (self.J_s2o(NxB.ominus().boxplus(Nx_Fj))) @ (NxB.ominus().J_1boxplus(Nx_Fj)) @ NxB.J_ominus()
+        
+        # JFj = NxB.J_2boxplus(Nx_Fj)
+        # Jp = np.hstack([Jp, np.zeros([JFj.shape[0],JFj.shape[1]*self.nf])])
+        # JFj = NxB.ominus().J_2boxplus(Nx_Fj)
+        # i = Fj_start + Fj-1
+        # Jp[:,i:i+JFj.shape[0]] = JFj
 
+        J_Fj = (self.J_s2o(NxB.ominus().boxplus(Nx_Fj))) @ (NxB.ominus().J_2boxplus(Nx_Fj))
+
+        Jp = J_robot
+        for i in range(self.nf):
+            if i == Fj:
+                Jp = np.hstack((Jp, J_Fj))
+            else:
+                Jp = np.hstack((Jp, np.zeros((2,2))))
         return Jp
 
 class FEKFSLAM2DCartesianFeature(FEKFSLAMFeature, Cartesian2DMapFeature):

@@ -105,6 +105,25 @@ class FEKFSLAM(FEKFMBL):
         ## To be completed by the student
         # znp: List of features
 
+        # Identify if znp is a list or an array
+        if isinstance(znp, list) is False:
+            # znp is an array, lets convert it into a list
+            # print("Es un array",znp)
+            pairs = znp.reshape(-1, 2)  # Reshape the array to have two columns
+            znp = [CartesianFeature(np.array(pair).reshape(-1, 1)) for pair in pairs]  # Convert each row to a separate NumPy array and store them in a list
+
+            # Lets take the 2x2 matrixes of the diagonal matrix Rnp and store them in a list
+            matrix_size = Rnp.shape[0]      # Determine the size of the original matrix
+            diagonal_blocks = []            # Initialize an empty list to store the diagonal blocks
+
+            # Iterate over the diagonal elements and extract the 2x2 blocks
+            for i in range(0, matrix_size, 2):
+                diagonal_block = Rnp[i:i+2, i:i+2]
+                diagonal_blocks.append(diagonal_block)
+            Rnp = diagonal_blocks
+        
+        # print("Rnp",Rnp)
+        # print("Es una lista",znp)
         f2add = len(znp)    # Number of features to add
         if f2add == 0:
             # No features to add
@@ -314,11 +333,12 @@ class FEKFSLAM(FEKFMBL):
         else:
             xk, Pk = xk_bar, Pk_bar
 
-        # xk,Pk = self.AddNewFeatures(xk,Pk,znp,Rnp)
+        if znp is not None:
+            xk, Pk = self.AddNewFeatures(xk,Pk,znp,Rnp)
 
         self.xk = xk
         self.Pk = Pk
-        self.Log(self.robot.xsk, xk, Pk, xk_bar, zk)
+        # self.Log(self.robot.xsk, xk, Pk, xk_bar, zk)
 
         # Use the variable names zm, zf, Rf, znp, Rnp so that the plotting functions work
         # self.Log(self.robot.xsk, self._GetRobotPose(self.xk), self._GetRobotPoseCovariance(self.Pk),
@@ -330,7 +350,7 @@ class FEKFSLAM(FEKFMBL):
             for zfi, Rfi in zip(zf, Rf):
                 zf_new_format = np.concatenate([zf_new_format, zfi]) if zf_new_format is not None else zfi
                 Rf_new_format = scipy.linalg.block_diag(Rf_new_format, Rfi) if Rf_new_format is not None else Rfi
-            print("zf new shape", zf_new_format.shape, zf_new_format)
+            # print("zf new shape", zf_new_format.shape, zf_new_format)
 
         self.PlotUncertainty(zf_new_format, Rf_new_format, znp, Rnp)
         return self.xk, self.Pk
@@ -423,7 +443,7 @@ class FEKFSLAM(FEKFMBL):
             hF_list.append(self.hfj(xk,i)) # Sensor Model, it tells me the pose of feature i wrt robot frame
             j = self.Jhfjx(xk,i) # Jacobian of feature i, used to compute covariance of feature i
             
-            PFi =  self.GetRobotPoseCovariance(j) @ self.GetRobotPoseCovariance(Pk) @ self.GetRobotPoseCovariance(j).T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
+            PFi =  j @ Pk @ j.T # + Jhfv(xk) @ Rf @ Jhfv(xk).T # Covariance of feature i
 
             PF_list.append(PFi) 
 
